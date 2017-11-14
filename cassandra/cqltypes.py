@@ -800,18 +800,13 @@ class _SimpleParameterizedType(_ParameterizedType):
     @classmethod
     def deserialize_safe(cls, byts, protocol_version):
         subtype, = cls.subtypes
-        if protocol_version >= 3:
-            unpack = int32_unpack
-            length = 4
-        else:
-            unpack = uint16_unpack
-            length = 2
-        numelements = unpack(byts[:length])
+        length = 4
+        numelements = int32_unpack(byts[:length])
         p = length
         result = []
         inner_proto = max(3, protocol_version)
         for _ in range(numelements):
-            itemlen = unpack(byts[p:p + length])
+            itemlen = int32_unpack(byts[p:p + length])
             p += length
             if itemlen < 0:
                 result.append(None)
@@ -827,13 +822,12 @@ class _SimpleParameterizedType(_ParameterizedType):
             raise TypeError("Received a string for a type that expects a sequence")
 
         subtype, = cls.subtypes
-        pack = int32_pack if protocol_version >= 3 else uint16_pack
         buf = io.BytesIO()
-        buf.write(pack(len(items)))
+        buf.write(int32_pack(len(items)))
         inner_proto = max(3, protocol_version)
         for item in items:
             itembytes = subtype.to_binary(item, inner_proto)
-            buf.write(pack(len(itembytes)))
+            buf.write(int32_pack(len(itembytes)))
             buf.write(itembytes)
         return buf.getvalue()
 
@@ -857,18 +851,13 @@ class MapType(_ParameterizedType):
     @classmethod
     def deserialize_safe(cls, byts, protocol_version):
         key_type, value_type = cls.subtypes
-        if protocol_version >= 3:
-            unpack = int32_unpack
-            length = 4
-        else:
-            unpack = uint16_unpack
-            length = 2
-        numelements = unpack(byts[:length])
+        length = 4
+        numelements = int32_unpack(byts[:length])
         p = length
         themap = util.OrderedMapSerializedKey(key_type, protocol_version)
         inner_proto = max(3, protocol_version)
         for _ in range(numelements):
-            key_len = unpack(byts[p:p + length])
+            key_len = int32_unpack(byts[p:p + length])
             p += length
             if key_len < 0:
                 keybytes = None
@@ -878,7 +867,7 @@ class MapType(_ParameterizedType):
                 p += key_len
                 key = key_type.from_binary(keybytes, inner_proto)
 
-            val_len = unpack(byts[p:p + length])
+            val_len = int32_unpack(byts[p:p + length])
             p += length
             if val_len < 0:
                 val = None
@@ -893,9 +882,8 @@ class MapType(_ParameterizedType):
     @classmethod
     def serialize_safe(cls, themap, protocol_version):
         key_type, value_type = cls.subtypes
-        pack = int32_pack if protocol_version >= 3 else uint16_pack
         buf = io.BytesIO()
-        buf.write(pack(len(themap)))
+        buf.write(int32_pack(len(themap)))
         try:
             items = six.iteritems(themap)
         except AttributeError:
@@ -904,9 +892,9 @@ class MapType(_ParameterizedType):
         for key, val in items:
             keybytes = key_type.to_binary(key, inner_proto)
             valbytes = value_type.to_binary(val, inner_proto)
-            buf.write(pack(len(keybytes)))
+            buf.write(int32_pack(len(keybytes)))
             buf.write(keybytes)
-            buf.write(pack(len(valbytes)))
+            buf.write(int32_pack(len(valbytes)))
             buf.write(valbytes)
         return buf.getvalue()
 

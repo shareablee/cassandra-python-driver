@@ -39,17 +39,11 @@ def setup_module():
 class QueryPagingTests(unittest.TestCase):
 
     def setUp(self):
-        if PROTOCOL_VERSION < 2:
-            raise unittest.SkipTest(
-                "Protocol 2.0+ is required for Paging state, currently testing against %r"
-                % (PROTOCOL_VERSION,))
 
         self.cluster = Cluster(
             protocol_version=PROTOCOL_VERSION,
             execution_profiles={EXEC_PROFILE_DEFAULT: ExecutionProfile(consistency_level=ConsistencyLevel.LOCAL_QUORUM)}
         )
-        if PROTOCOL_VERSION < 3:
-            self.cluster.set_core_connections_per_host(HostDistance.LOCAL, 1)
         self.session = self.cluster.connect(wait_for_all_pools=True)
         self.session.execute("TRUNCATE test3rf.test")
 

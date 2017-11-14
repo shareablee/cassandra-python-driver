@@ -40,11 +40,8 @@ from tests.integration import (get_cluster, use_singledc, PROTOCOL_VERSION, exec
                                BasicSegregatedKeyspaceUnitTestCase, BasicSharedKeyspaceUnitTestCase,
                                BasicExistingKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster, CASSANDRA_VERSION,
                                greaterthanorequaldse51, greaterthanorequalcass30, lessthancass30, local,
-                               get_supported_protocol_versions, greaterthancass20,
-                               greaterthancass21, assert_startswith, greaterthanorequalcass40,
-                               greaterthanorequaldse67, lessthancass40
-)
-
+                               greaterthancass21, assert_startswith,
+                               greaterthanorequalcass40, greaterthanorequaldse67, lessthancass40)
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +51,6 @@ def setup_module():
 
 
 class HostMetatDataTests(BasicExistingKeyspaceUnitTestCase):
-    @local
     def test_broadcast_listen_address(self):
         """
         Check to ensure that the broadcast, rpc_address, listen adresss and host are is populated correctly
@@ -97,6 +93,7 @@ class HostMetatDataTests(BasicExistingKeyspaceUnitTestCase):
         """
         for host in self.cluster.metadata.all_hosts():
             assert_startswith(host.release_version, CASSANDRA_VERSION.base_version)
+
 
 
 
@@ -598,12 +595,11 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
         cluster2.refresh_schema_metadata()
         self.assertIn("c", cluster2.metadata.keyspaces[self.keyspace_name].tables[table_name].columns)
 
-        if PROTOCOL_VERSION >= 3:
-            # UDT metadata modification
-            self.session.execute("CREATE TYPE {0}.user (age int, name text)".format(self.keyspace_name))
-            self.assertEqual(cluster2.metadata.keyspaces[self.keyspace_name].user_types, {})
-            cluster2.refresh_schema_metadata()
-            self.assertIn("user", cluster2.metadata.keyspaces[self.keyspace_name].user_types)
+        # UDT metadata modification
+        self.session.execute("CREATE TYPE {0}.user (age int, name text)".format(self.keyspace_name))
+        self.assertEqual(cluster2.metadata.keyspaces[self.keyspace_name].user_types, {})
+        cluster2.refresh_schema_metadata()
+        self.assertIn("user", cluster2.metadata.keyspaces[self.keyspace_name].user_types)
 
         if PROTOCOL_VERSION >= 4:
             # UDF metadata modification
@@ -770,9 +766,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
         @test_category metadata
         """
 
-        if PROTOCOL_VERSION < 3:
-            raise unittest.SkipTest("Protocol 3+ is required for UDTs, currently testing against {0}".format(PROTOCOL_VERSION))
-
         cluster2 = Cluster(protocol_version=PROTOCOL_VERSION, schema_event_refresh_window=-1)
         cluster2.connect()
 
@@ -784,41 +777,6 @@ class SchemaMetadataTests(BasicSegregatedKeyspaceUnitTestCase):
         self.assertIn("user", cluster2.metadata.keyspaces[self.keyspace_name].user_types)
 
         cluster2.shutdown()
-
-    @greaterthancass20
-    def test_refresh_user_type_metadata_proto_2(self):
-        """
-        Test to insure that protocol v1/v2 surface UDT metadata changes
-
-        @since 3.7.0
-        @jira_ticket PYTHON-106
-        @expected_result UDT metadata in the keyspace should be updated regardless of protocol version
-
-        @test_category metadata
-        """
-        supported_versions = get_supported_protocol_versions()
-        if 2 not in supported_versions:  # 1 and 2 were dropped in the same version
-                raise unittest.SkipTest("Protocol versions 1 and 2 are not supported in Cassandra version ".format(CASSANDRA_VERSION))
-
-        for protocol_version in (1, 2):
-            cluster = Cluster(protocol_version=protocol_version)
-            session = cluster.connect()
-            self.assertEqual(cluster.metadata.keyspaces[self.keyspace_name].user_types, {})
-
-            session.execute("CREATE TYPE {0}.user (age int, name text)".format(self.keyspace_name))
-            self.assertIn("user", cluster.metadata.keyspaces[self.keyspace_name].user_types)
-            self.assertIn("age", cluster.metadata.keyspaces[self.keyspace_name].user_types["user"].field_names)
-            self.assertIn("name", cluster.metadata.keyspaces[self.keyspace_name].user_types["user"].field_names)
-
-            session.execute("ALTER TYPE {0}.user ADD flag boolean".format(self.keyspace_name))
-            self.assertIn("flag", cluster.metadata.keyspaces[self.keyspace_name].user_types["user"].field_names)
-
-            session.execute("ALTER TYPE {0}.user RENAME flag TO something".format(self.keyspace_name))
-            self.assertIn("something", cluster.metadata.keyspaces[self.keyspace_name].user_types["user"].field_names)
-
-            session.execute("DROP TYPE {0}.user".format(self.keyspace_name))
-            self.assertEqual(cluster.metadata.keyspaces[self.keyspace_name].user_types, {})
-            cluster.shutdown()
 
     def test_refresh_user_function_metadata(self):
         """
@@ -1071,16 +1029,10 @@ class TestCodeCoverage(unittest.TestCase):
                                                          lineterm=''))
             self.fail(diff_string)
 
-    @greaterthancass20
     def test_export_keyspace_schema_udts(self):
         """
         Test udt exports
         """
-
-        if PROTOCOL_VERSION < 3:
-            raise unittest.SkipTest(
-                "Protocol 3.0+ is required for UDT change events, currently testing against %r"
-                % (PROTOCOL_VERSION,))
 
         if sys.version_info[0:2] != (2, 7):
             raise unittest.SkipTest('This test compares static strings generated from dict items, which may change orders. Test with 2.7.')
@@ -1940,7 +1892,6 @@ class BadMetaTest(unittest.TestCase):
             self.assertIs(m._exc_info[0], self.BadMetaException)
             self.assertIn("/*\nWarning:", m.export_as_string())
 
-    @greaterthancass20
     def test_bad_user_type(self):
         self.session.execute('CREATE TYPE %s (i int, d double)' % self.function_name)
         with patch.object(self.parser_class, '_build_user_type', side_effect=self.BadMetaException):

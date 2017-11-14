@@ -1,3 +1,10 @@
+4.0.0
+=====
+
+Features
+--------
+* Cassandra 2.0 support removal (PYTHON-716)
+
 3.21.0
 ======
 Unreleased

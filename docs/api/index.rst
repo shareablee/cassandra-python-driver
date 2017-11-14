@@ -14,7 +14,7 @@ Core Driver
    cassandra/metadata
    cassandra/metrics
    cassandra/query
-   cassandra/pool
+   cassandra/hosts
    cassandra/protocol
    cassandra/encoder
    cassandra/decoder

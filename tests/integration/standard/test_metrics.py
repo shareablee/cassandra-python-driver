@@ -37,6 +37,7 @@ import pprint as pp
 def setup_module():
     use_singledc()
 
+
 @local
 class MetricsTests(unittest.TestCase):
 
@@ -192,6 +193,7 @@ class MetricsTests(unittest.TestCase):
 
 
 class MetricsNamespaceTest(BasicSharedKeyspaceUnitTestCaseRF3WM):
+
     @local
     def test_metrics_per_cluster(self):
         """
@@ -390,7 +392,7 @@ class MetricsRequestSize(BasicExistingKeyspaceUnitTestCase):
         # Make sure a poorly coded RA doesn't cause issues
         ra = RequestAnalyzer(self.session, throw_on_success=False, throw_on_fail=True)
         self.session.execute("SELECT release_version FROM system.local")
-        
+
         ra.remove_ra(self.session)
 
         RequestAnalyzer(self.session, throw_on_success=True)

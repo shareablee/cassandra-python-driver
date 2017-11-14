@@ -36,7 +36,7 @@ from cassandra.policies import (RoundRobinPolicy, WhiteListRoundRobinPolicy, DCA
                                 DowngradingConsistencyRetryPolicy, ConstantReconnectionPolicy,
                                 LoadBalancingPolicy, ConvictionPolicy, ReconnectionPolicy, FallthroughRetryPolicy,
                                 IdentityTranslator, EC2MultiRegionTranslator, HostFilterPolicy)
-from cassandra.pool import Host
+from cassandra.hosts import Host
 from cassandra.connection import DefaultEndPoint
 from cassandra.query import Statement
 

@@ -17,7 +17,6 @@ except ImportError:
     import unittest # noqa
 
 from mock import patch, Mock
-import weakref
 import socket
 
 from tests import is_monkey_patched

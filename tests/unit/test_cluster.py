@@ -25,8 +25,9 @@ from cassandra import ConsistencyLevel, DriverException, Timeout, Unavailable, R
     InvalidRequest, Unauthorized, AuthenticationFailed, OperationTimedOut, UnsupportedOperation, RequestValidationException, ConfigurationException, ProtocolVersion
 from cassandra.cluster import _Scheduler, Session, Cluster, default_lbp_factory, \
     ExecutionProfile, _ConfigMode, EXEC_PROFILE_DEFAULT
-from cassandra.pool import Host
-from cassandra.policies import HostDistance, RetryPolicy, RoundRobinPolicy, DowngradingConsistencyRetryPolicy, SimpleConvictionPolicy
+from cassandra.hosts import Host
+from cassandra.policies import RetryPolicy, RoundRobinPolicy, \
+    DowngradingConsistencyRetryPolicy, SimpleConvictionPolicy
 from cassandra.query import SimpleStatement, named_tuple_factory, tuple_factory
 from tests.unit.utils import mock_session_pools
 from tests import connection_class
@@ -95,20 +96,6 @@ class ClusterTest(unittest.TestCase):
             Cluster(contact_points=[None], protocol_version=4, connect_timeout=1)
         with self.assertRaises(TypeError):
             Cluster(contact_points="not a sequence", protocol_version=4, connect_timeout=1)
-
-    def test_requests_in_flight_threshold(self):
-        d = HostDistance.LOCAL
-        mn = 3
-        mx = 5
-        c = Cluster(protocol_version=2)
-        c.set_min_requests_per_connection(d, mn)
-        c.set_max_requests_per_connection(d, mx)
-        # min underflow, max, overflow
-        for n in (-1, mx, 127):
-            self.assertRaises(ValueError, c.set_min_requests_per_connection, d, n)
-        # max underflow, under min, overflow
-        for n in (0, mn, 128):
-            self.assertRaises(ValueError, c.set_max_requests_per_connection, d, n)
 
 
 class SchedulerTest(unittest.TestCase):

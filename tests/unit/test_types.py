@@ -33,7 +33,7 @@ from cassandra.cqltypes import (
     int32_pack, Int32Type, ListType, MapType
 )
 from cassandra.encoder import cql_quote
-from cassandra.pool import Host
+from cassandra.hosts import Host
 from cassandra.metadata import Token
 from cassandra.policies import ConvictionPolicy, SimpleConvictionPolicy
 from cassandra.protocol import (
