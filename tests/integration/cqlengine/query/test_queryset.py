@@ -41,8 +41,9 @@ from cassandra.cqlengine import statements
 from cassandra.cqlengine import operators
 from cassandra.util import uuid_from_time
 from cassandra.cqlengine.connection import get_session
-from tests.integration import PROTOCOL_VERSION, CASSANDRA_VERSION, greaterthancass21
+from tests.integration import CASSANDRA_VERSION, greaterthancass21, greaterthanorequalcass30
 from tests.integration.cqlengine import execute_count, DEFAULT_KEYSPACE
+from tests.integration.cqlengine import mock_execute_async
 
 
 class TzOffset(tzinfo):
@@ -1105,17 +1106,17 @@ class PageQueryTests(BaseCassEngTestCase):
 
 class ModelQuerySetTimeoutTestCase(BaseQuerySetUsage):
     def test_default_timeout(self):
-        with mock.patch.object(Session, 'execute') as mock_execute:
+        with mock_execute_async() as mock_execute:
             list(TestModel.objects())
             self.assertEqual(mock_execute.call_args[-1]['timeout'], NOT_SET)
 
     def test_float_timeout(self):
-        with mock.patch.object(Session, 'execute') as mock_execute:
+        with mock_execute_async() as mock_execute:
             list(TestModel.objects().timeout(0.5))
             self.assertEqual(mock_execute.call_args[-1]['timeout'], 0.5)
 
     def test_none_timeout(self):
-        with mock.patch.object(Session, 'execute') as mock_execute:
+        with mock_execute_async() as mock_execute:
             list(TestModel.objects().timeout(None))
             self.assertEqual(mock_execute.call_args[-1]['timeout'], None)
 
@@ -1126,17 +1127,17 @@ class DMLQueryTimeoutTestCase(BaseQuerySetUsage):
         super(DMLQueryTimeoutTestCase, self).setUp()
 
     def test_default_timeout(self):
-        with mock.patch.object(Session, 'execute') as mock_execute:
+        with mock_execute_async() as mock_execute:
             self.model.save()
             self.assertEqual(mock_execute.call_args[-1]['timeout'], NOT_SET)
 
     def test_float_timeout(self):
-        with mock.patch.object(Session, 'execute') as mock_execute:
+        with mock_execute_async() as mock_execute:
             self.model.timeout(0.5).save()
             self.assertEqual(mock_execute.call_args[-1]['timeout'], 0.5)
 
     def test_none_timeout(self):
-        with mock.patch.object(Session, 'execute') as mock_execute:
+        with mock_execute_async() as mock_execute:
             self.model.timeout(None).save()
             self.assertEqual(mock_execute.call_args[-1]['timeout'], None)
 
