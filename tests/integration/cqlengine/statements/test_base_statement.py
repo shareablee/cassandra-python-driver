@@ -28,7 +28,7 @@ from cassandra.cqlengine.statements import InsertStatement, UpdateStatement, Sel
 from cassandra.cqlengine.operators import EqualsOperator, LikeOperator
 from cassandra.cqlengine.columns import Column
 
-from tests.integration.cqlengine.base import BaseCassEngTestCase, TestQueryUpdateModel
+from tests.integration.cqlengine.base import BaseCassEngTestCase, CollectionsModel
 from tests.integration.cqlengine import DEFAULT_KEYSPACE
 from tests.integration import greaterthanorequalcass3_10
 
@@ -55,13 +55,13 @@ class ExecuteStatementTest(BaseCassEngTestCase):
     @classmethod
     def setUpClass(cls):
         super(ExecuteStatementTest, cls).setUpClass()
-        sync_table(TestQueryUpdateModel)
-        cls.table_name = '{0}.test_query_update_model'.format(DEFAULT_KEYSPACE)
+        sync_table(CollectionsModel)
+        cls.table_name = '{0}.collections_model'.format(DEFAULT_KEYSPACE)
 
     @classmethod
     def tearDownClass(cls):
         super(ExecuteStatementTest, cls).tearDownClass()
-        drop_table(TestQueryUpdateModel)
+        drop_table(CollectionsModel)
 
     def _verify_statement(self, original):
         st = SelectStatement(self.table_name)
