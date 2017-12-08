@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.integration import get_server_versions, use_singledc, PROTOCOL_VERSION, BasicSharedKeyspaceUnitTestCaseWFunctionTable, BasicSharedKeyspaceUnitTestCase, execute_until_pass
+from tests.integration import get_server_versions, use_singledc, PROTOCOL_VERSION, \
+ BasicSharedKeyspaceUnitTestCaseWFunctionTable, BasicSharedKeyspaceUnitTestCase, execute_until_pass
 
 try:
     import unittest2 as unittest
@@ -31,6 +32,7 @@ def setup_module():
 class NameTupleFactory(BasicSharedKeyspaceUnitTestCase):
 
     def setUp(self):
+        super(NameTupleFactory, self).setUp()
         self.common_setup(1, execution_profiles={EXEC_PROFILE_DEFAULT: ExecutionProfile(row_factory=named_tuple_factory)})
         ddl = '''
                 CREATE TABLE {0}.{1} (
@@ -193,7 +195,7 @@ class NamedTupleFactoryAndNumericColNamesTests(unittest.TestCase):
         try:
             self.session.execute('SELECT * FROM test1rf.table_num_col')
         except ValueError as e:
-            self.fail("Unexpected ValueError exception: %s" % e.message)
+            self.fail("Unexpected ValueError exception: %s" % str(e))
 
     def test_can_select_using_alias(self):
         """
@@ -205,7 +207,7 @@ class NamedTupleFactoryAndNumericColNamesTests(unittest.TestCase):
         try:
             self.session.execute('SELECT key, "626972746864617465" AS my_col from test1rf.table_num_col')
         except ValueError as e:
-            self.fail("Unexpected ValueError exception: %s" % e.message)
+            self.fail("Unexpected ValueError exception: %s" % str(e))
 
     def test_can_select_with_dict_factory(self):
         """
@@ -216,4 +218,4 @@ class NamedTupleFactoryAndNumericColNamesTests(unittest.TestCase):
             try:
                 cluster.connect().execute('SELECT * FROM test1rf.table_num_col')
             except ValueError as e:
-                self.fail("Unexpected ValueError exception: %s" % e.message)
+                self.fail("Unexpected ValueError exception: %s" % str(e))

@@ -28,8 +28,8 @@ import time
 from unittest import SkipTest
 
 from cassandra import ConsistencyLevel, OperationTimedOut
-from cassandra.cluster import NoHostAvailable, ConnectionShutdown, Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT
-import cassandra.io.asyncorereactor
+from cassandra.cluster import NoHostAvailable, ConnectionShutdown, Cluster, \
+    ExecutionProfile, EXEC_PROFILE_DEFAULT
 from cassandra.io.asyncorereactor import AsyncoreConnection
 from cassandra.protocol import QueryMessage
 from cassandra.connection import Connection

@@ -17,7 +17,7 @@ import logging
 import six
 import threading
 
-from cassandra.cluster import Cluster, _ConfigMode, _NOT_SET, NoHostAvailable, UserTypeDoesNotExist, ConsistencyLevel
+from cassandra.cluster import Cluster, _NOT_SET, NoHostAvailable, UserTypeDoesNotExist
 from cassandra.query import SimpleStatement, dict_factory
 
 from cassandra.cqlengine import CQLEngineException
@@ -62,7 +62,6 @@ class Connection(object):
     name = None
     hosts = None
 
-    consistency = None
     retry_connect = False
     lazy_connect = False
     lazy_connect_lock = None
@@ -71,11 +70,9 @@ class Connection(object):
     cluster = None
     session = None
 
-    def __init__(self, name, hosts, consistency=None,
-                 lazy_connect=False, retry_connect=False, cluster_options=None):
+    def __init__(self, name, hosts, lazy_connect=False, retry_connect=False, cluster_options=None):
         self.hosts = hosts
         self.name = name
-        self.consistency = consistency
         self.lazy_connect = lazy_connect
         self.retry_connect = retry_connect
         self.cluster_options = cluster_options if cluster_options else {}
@@ -115,14 +112,7 @@ class Connection(object):
         self.setup_session()
 
     def setup_session(self):
-        if self.cluster._config_mode == _ConfigMode.PROFILES:
-            self.cluster.profile_manager.default.row_factory = dict_factory
-            if self.consistency is not None:
-                self.cluster.profile_manager.default.consistency_level = self.consistency
-        else:
-            self.session.row_factory = dict_factory
-            if self.consistency is not None:
-                self.session.default_consistency_level = self.consistency
+        self.cluster.profile_manager.default.row_factory = dict_factory
         enc = self.session.encoder
         enc.mapping[tuple] = enc.cql_encode_tuple
         _register_known_types(self.session.cluster)
@@ -143,21 +133,16 @@ class Connection(object):
                 self.setup()
 
 
-def register_connection(name, hosts=None, consistency=None, lazy_connect=False,
-                        retry_connect=False, cluster_options=None, default=False,
-                        session=None):
+def register_connection(name, hosts=None, lazy_connect=False, retry_connect=False,
+                        cluster_options=None, default=False, session=None):
     """
     Add a connection to the connection registry. ``hosts`` and ``session`` are
-    mutually exclusive, and ``consistency``, ``lazy_connect``,
-    ``retry_connect``, and ``cluster_options`` only work with ``hosts``. Using
+    mutually exclusive, and ``lazy_connect``, ``retry_connect``,
+    and ``cluster_options`` only work with ``hosts``. Using
     ``hosts`` will create a new :class:`cassandra.cluster.Cluster` and
     :class:`cassandra.cluster.Session`.
 
     :param list hosts: list of hosts, (``contact_points`` for :class:`cassandra.cluster.Cluster`).
-    :param int consistency: The default :class:`~.ConsistencyLevel` for the
-        registered connection's new session. Default is the same as
-        :attr:`.Session.default_consistency_level`. For use with ``hosts`` only;
-        will fail when used with ``session``.
     :param bool lazy_connect: True if should not connect until first use. For
         use with ``hosts`` only; will fail when used with ``session``.
     :param bool retry_connect: True if we should retry to connect even if there
@@ -177,7 +162,6 @@ def register_connection(name, hosts=None, consistency=None, lazy_connect=False,
 
     if session is not None:
         invalid_config_args = (hosts is not None or
-                               consistency is not None or
                                lazy_connect is not False or
                                retry_connect is not False or
                                cluster_options is not None)
@@ -189,8 +173,8 @@ def register_connection(name, hosts=None, consistency=None, lazy_connect=False,
     else:  # use hosts argument
         conn = Connection(
             name, hosts=hosts,
-            consistency=consistency, lazy_connect=lazy_connect,
-            retry_connect=retry_connect, cluster_options=cluster_options
+            lazy_connect=lazy_connect, retry_connect=retry_connect,
+            cluster_options=cluster_options
         )
         conn.setup()
 
@@ -282,12 +266,9 @@ def set_session(s):
         if conn.session:
             log.warning("configuring new default session for cqlengine when one was already set")
 
-    if not any([
-        s.cluster.profile_manager.default.row_factory is dict_factory and s.cluster._config_mode in [_ConfigMode.PROFILES, _ConfigMode.UNCOMMITTED],
-        s.row_factory is dict_factory and s.cluster._config_mode in [_ConfigMode.LEGACY, _ConfigMode.UNCOMMITTED],
-    ]):
-        raise CQLEngineException("Failed to initialize: row_factory must be 'dict_factory'")
-
+    if s.cluster.profile_manager.default.row_factory is not dict_factory:
+        raise CQLEngineException("Failed to initialize: the default 'ExecutionProfile.row_factory' must be 'dict_factory'.")
+    
     conn.session = s
     conn.cluster = s.cluster
 
@@ -304,7 +285,6 @@ def set_session(s):
 def setup(
         hosts,
         default_keyspace,
-        consistency=None,
         lazy_connect=False,
         retry_connect=False,
         **kwargs):
@@ -313,7 +293,6 @@ def setup(
 
     :param list hosts: list of hosts, (``contact_points`` for :class:`cassandra.cluster.Cluster`)
     :param str default_keyspace: The default keyspace to use
-    :param int consistency: The global default :class:`~.ConsistencyLevel` - default is the same as :attr:`.Session.default_consistency_level`
     :param bool lazy_connect: True if should not connect until first use
     :param bool retry_connect: True if we should retry to connect even if there was a connection failure initially
     :param \*\*kwargs: Pass-through keyword arguments for :class:`cassandra.cluster.Cluster`
@@ -322,7 +301,7 @@ def setup(
     from cassandra.cqlengine import models
     models.DEFAULT_KEYSPACE = default_keyspace
 
-    register_connection('default', hosts=hosts, consistency=consistency, lazy_connect=lazy_connect,
+    register_connection('default', hosts=hosts, lazy_connect=lazy_connect,
                         retry_connect=retry_connect, cluster_options=kwargs, default=True)
 
 

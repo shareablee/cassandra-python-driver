@@ -73,8 +73,9 @@ def tuple_factory(colnames, rows):
     Example::
 
         >>> from cassandra.query import tuple_factory
+        >>> ep = ExecutionProfile(row_factory=tuple_factory)
+        >>> cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: ep})
         >>> session = cluster.connect('mykeyspace')
-        >>> session.row_factory = tuple_factory
         >>> rows = session.execute("SELECT name, age FROM users LIMIT 1")
         >>> print rows[0]
         ('Bob', 42)
@@ -126,8 +127,9 @@ def named_tuple_factory(colnames, rows):
     Example::
 
         >>> from cassandra.query import named_tuple_factory
+        >>> ep = ExecutionProfile(row_factory=named_tuple_factory)
+        >>> cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: ep})
         >>> session = cluster.connect('mykeyspace')
-        >>> session.row_factory = named_tuple_factory
         >>> rows = session.execute("SELECT name, age FROM users LIMIT 1")
         >>> user = rows[0]
 
@@ -170,7 +172,7 @@ def named_tuple_factory(colnames, rows):
                     "(see Python 'namedtuple' documentation for details on name rules). "
                     "Results will be returned with positional names. "
                     "Avoid this by choosing different names, using SELECT \"<col name>\" AS aliases, "
-                    "or specifying a different row_factory on your Session" %
+                    "or specifying a different row_factory on your ExecutionProfile" %
                     (colnames, clean_column_names))
         Row = namedtuple('Row', _sanitize_identifiers(clean_column_names))
 
@@ -184,8 +186,9 @@ def dict_factory(colnames, rows):
     Example::
 
         >>> from cassandra.query import dict_factory
+        >>> ep = ExecutionProfile(row_factory=dict_factory)
+        >>> cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: ep})
         >>> session = cluster.connect('mykeyspace')
-        >>> session.row_factory = dict_factory
         >>> rows = session.execute("SELECT name, age FROM users LIMIT 1")
         >>> print rows[0]
         {u'age': 42, u'name': u'Bob'}

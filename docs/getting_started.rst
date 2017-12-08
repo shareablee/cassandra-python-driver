@@ -40,37 +40,14 @@ behavior in some other way, this is the place to do it:
 
 .. code-block:: python
 
-    from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT
-    from cassandra.query import tuple_factory
+    from cassandra.cluster import Cluster
+    from cassandra.auth import PlainTextAuthProvider
 
-    profile = ExecutionProfile(row_factory=tuple_factory)
-    cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: profile})
-    session = cluster.connect()
-
-    print(session.execute("SELECT release_version FROM system.local").one())
-
-Profiles are passed in by ``execution_profiles`` dict.
-
-In this case we can construct the base ``ExecutionProfile`` passing all attributes:
-
-.. code-block:: python
-
-    from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT
-    from cassandra.policies import WhiteListRoundRobinPolicy, DowngradingConsistencyRetryPolicy
-    from cassandra.query import tuple_factory
-
-    profile = ExecutionProfile(
-        load_balancing_policy=WhiteListRoundRobinPolicy(['127.0.0.1']),
-        retry_policy=DowngradingConsistencyRetryPolicy(),
-        consistency_level=ConsistencyLevel.LOCAL_QUORUM,
-        serial_consistency_level=ConsistencyLevel.LOCAL_SERIAL,
-        request_timeout=15,
-        row_factory=tuple_factory
-    )
-    cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: profile})
-    session = cluster.connect()
-
-    print(session.execute("SELECT release_version FROM system.local").one())
+    auth_provider = PlainTextAuthProvider(username='cassandra', password='cassandra')
+    cluster = Cluster(
+        ['10.1.1.3', '10.1.1.4', '10.1.1.5'],
+        auth_provider=auth_provider,
+        port=9042)
 
 Users are free to setup additional profiles to be used by name:
 
@@ -150,7 +127,8 @@ examples are equivalent:
         print row[0], row[1], row[2]
 
 If you prefer another result format, such as a ``dict`` per row, you
-can change the :attr:`~.Session.row_factory` attribute.
+can change the :attr:`~.ExecutionProfile.row_factory` attribute of the
+selected execution profile of the cluster.
 
 As mentioned in our `Drivers Best Practices Guide <https://docs.datastax.com/en/devapp/doc/devapp/driversBestPractices.html#driversBestPractices__usePreparedStatements>`_,
 it is highly recommended to use `Prepared statements <#prepared-statement>`_ for your

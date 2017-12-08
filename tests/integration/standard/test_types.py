@@ -205,7 +205,7 @@ class TypeTests(BasicSharedKeyspaceUnitTestCase):
         # verify data with with prepared statement, use dictionary with no explicit columns
         select = s.prepare("SELECT * FROM alltypes")
         results = s.execute(select,
-                            execution_profile=s.execution_profile_clone_update(EXEC_PROFILE_DEFAULT, row_factory=ordered_dict_factory))[0]
+                            execution_profile=s.execution_profile_clone_update(EXEC_PROFILE_DEFAULT, row_factory=ordered_dict_factory)).one()
 
         for expected, actual in zip(params, results.values()):
             self.assertEqual(actual, expected)
@@ -284,7 +284,7 @@ class TypeTests(BasicSharedKeyspaceUnitTestCase):
         select = s.prepare("SELECT * FROM allcoltypes")
         results = s.execute(select,
                             execution_profile=s.execution_profile_clone_update(EXEC_PROFILE_DEFAULT,
-                                                                               row_factory=ordered_dict_factory))[0]
+                                                                               row_factory=ordered_dict_factory)).one()
 
         for expected, actual in zip(params, results.values()):
             self.assertEqual(actual, expected)

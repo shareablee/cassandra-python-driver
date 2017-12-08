@@ -339,8 +339,9 @@ class ClusterTests(unittest.TestCase):
         """
         Ensure errors are not thrown when using non-default policies
         """
-
+        ep = ExecutionProfile(load_balancing_policy=RoundRobinPolicy(), retry_policy=RetryPolicy())
         Cluster(
+            execution_profiles={EXEC_PROFILE_DEFAULT: ep},
             reconnection_policy=ExponentialReconnectionPolicy(1.0, 600.0),
             conviction_policy_factory=SimpleConvictionPolicy,
             protocol_version=PROTOCOL_VERSION
@@ -860,18 +861,6 @@ class ClusterTests(unittest.TestCase):
 
             # make sure original profile is not impacted
             self.assertTrue(session.execute(query, execution_profile='node1')[0].release_version)
-
-    def test_setting_lbp_legacy(self):
-        cluster = Cluster()
-        self.addCleanup(cluster.shutdown)
-        cluster.load_balancing_policy = RoundRobinPolicy()
-        self.assertEqual(
-            list(cluster.load_balancing_policy.make_query_plan()), []
-        )
-        cluster.connect()
-        self.assertNotEqual(
-            list(cluster.load_balancing_policy.make_query_plan()), []
-        )
 
     def test_profile_lb_swap(self):
         """

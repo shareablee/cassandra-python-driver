@@ -22,7 +22,7 @@ from cassandra import ConsistencyLevel
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine import columns, connection, models
 from cassandra.cqlengine.management import sync_table
-from cassandra.cluster import Cluster, ExecutionProfile, _clusters_for_shutdown, _ConfigMode, EXEC_PROFILE_DEFAULT
+from cassandra.cluster import Cluster, ExecutionProfile, _clusters_for_shutdown, EXEC_PROFILE_DEFAULT
 from cassandra.policies import RoundRobinPolicy
 from cassandra.query import dict_factory
 
@@ -76,7 +76,8 @@ class SeveralConnectionsTest(BaseCassEngTestCase):
         cls.keyspace1 = 'ctest1'
         cls.keyspace2 = 'ctest2'
         super(SeveralConnectionsTest, cls).setUpClass()
-        cls.setup_cluster = Cluster(protocol_version=PROTOCOL_VERSION)
+        ep = ExecutionProfile(row_factory=dict_factory)
+        cls.setup_cluster = Cluster(protocol_version=PROTOCOL_VERSION, execution_profiles={EXEC_PROFILE_DEFAULT: ep})
         cls.setup_session = cls.setup_cluster.connect()
         ddl = "CREATE KEYSPACE {0} WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': '{1}'}}".format(cls.keyspace1, 1)
         execute_with_long_wait_retry(cls.setup_session, ddl)
@@ -93,11 +94,10 @@ class SeveralConnectionsTest(BaseCassEngTestCase):
         models.DEFAULT_KEYSPACE
 
     def setUp(self):
-        self.c = Cluster(protocol_version=PROTOCOL_VERSION)
+        ep = ExecutionProfile(row_factory=dict_factory)
+        self.c = Cluster(protocol_version=PROTOCOL_VERSION, execution_profiles={EXEC_PROFILE_DEFAULT: ep})
         self.session1 = self.c.connect(keyspace=self.keyspace1)
-        self.session1.row_factory = dict_factory
         self.session2 = self.c.connect(keyspace=self.keyspace2)
-        self.session2.row_factory = dict_factory
 
     def tearDown(self):
         self.c.shutdown()
@@ -131,68 +131,3 @@ class SeveralConnectionsTest(BaseCassEngTestCase):
 class ConnectionModel(Model):
     key = columns.Integer(primary_key=True)
     some_data = columns.Text()
-
-
-class ConnectionInitTest(unittest.TestCase):
-    def test_default_connection_uses_legacy(self):
-        connection.default()
-        conn = connection.get_connection()
-        self.assertEqual(conn.cluster._config_mode, _ConfigMode.LEGACY)
-
-    def test_connection_with_legacy_settings(self):
-        connection.setup(
-            hosts=[CASSANDRA_IP],
-            default_keyspace=DEFAULT_KEYSPACE,
-            consistency=ConsistencyLevel.LOCAL_ONE
-        )
-        conn = connection.get_connection()
-        self.assertEqual(conn.cluster._config_mode, _ConfigMode.LEGACY)
-
-    def test_connection_from_session_with_execution_profile(self):
-        cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: ExecutionProfile(row_factory=dict_factory)})
-        session = cluster.connect()
-        connection.default()
-        connection.set_session(session)
-        conn = connection.get_connection()
-        self.assertEqual(conn.cluster._config_mode, _ConfigMode.PROFILES)
-
-    def test_connection_from_session_with_legacy_settings(self):
-        cluster = Cluster(load_balancing_policy=RoundRobinPolicy())
-        session = cluster.connect()
-        session.row_factory = dict_factory
-        connection.set_session(session)
-        conn = connection.get_connection()
-        self.assertEqual(conn.cluster._config_mode, _ConfigMode.LEGACY)
-
-    def test_uncommitted_session_uses_legacy(self):
-        cluster = Cluster()
-        session = cluster.connect()
-        session.row_factory = dict_factory
-        connection.set_session(session)
-        conn = connection.get_connection()
-        self.assertEqual(conn.cluster._config_mode, _ConfigMode.LEGACY)
-
-    def test_legacy_insert_query(self):
-        connection.setup(
-            hosts=[CASSANDRA_IP],
-            default_keyspace=DEFAULT_KEYSPACE,
-            consistency=ConsistencyLevel.LOCAL_ONE
-        )
-        self.assertEqual(connection.get_connection().cluster._config_mode, _ConfigMode.LEGACY)
-
-        sync_table(ConnectionModel)
-        ConnectionModel.objects.create(key=0, some_data='text0')
-        ConnectionModel.objects.create(key=1, some_data='text1')
-        self.assertEqual(ConnectionModel.objects(key=0)[0].some_data, 'text0')
-
-    def test_execution_profile_insert_query(self):
-        cluster = Cluster(execution_profiles={EXEC_PROFILE_DEFAULT: ExecutionProfile(row_factory=dict_factory)})
-        session = cluster.connect()
-        connection.default()
-        connection.set_session(session)
-        self.assertEqual(connection.get_connection().cluster._config_mode, _ConfigMode.PROFILES)
-
-        sync_table(ConnectionModel)
-        ConnectionModel.objects.create(key=0, some_data='text0')
-        ConnectionModel.objects.create(key=1, some_data='text1')
-        self.assertEqual(ConnectionModel.objects(key=0)[0].some_data, 'text0')
