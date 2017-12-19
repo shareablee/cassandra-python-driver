@@ -4,6 +4,14 @@ Upgrading
 .. toctree::
    :maxdepth: 1
 
+Upgrading to 4.0
+----------------
+
+Execution API Updates
+^^^^^^^^^^^^^^^^^^^^^
+:attr:`~.PreparedStatement.column_metadata` is renamed to :attr:`~.PreparedStatement.bind_metadata`
+
+
 Upgrading from dse-driver
 -------------------------
 
