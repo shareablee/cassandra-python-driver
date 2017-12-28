@@ -102,7 +102,8 @@ By default, queries in cqlengine are LOGGED, which carries additional overhead f
 
 .. code-block:: python
 
-    from cassandra.cqlengine.query import BatchType
-    with BatchQuery(batch_type=BatchType.Unlogged) as b:
-        LogEntry.batch(b).create(k=1, v=1)
-        LogEntry.batch(b).create(k=1, v=2)
+        from cassandra.query import BatchType
+
+        with BatchQuery(batch_type=BatchType.UNLOGGED) as b:
+            LogEntry.batch(b).create(k=1, v=1)
+            LogEntry.batch(b).create(k=1, v=2)
