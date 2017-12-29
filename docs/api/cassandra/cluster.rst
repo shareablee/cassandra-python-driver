@@ -118,9 +118,7 @@
 
    .. automethod:: refresh_nodes
 
-   .. automethod:: set_meta_refresh_enabled
-
-.. autoclass:: ExecutionProfile (load_balancing_policy=<object object>, retry_policy=None, consistency_level=LOCAL_ONE, serial_consistency_level=None, request_timeout=10.0, row_factory=<function named_tuple_factory>, speculative_execution_policy=None)
+.. autoclass:: ExecutionProfile
    :members:
    :exclude-members: consistency_level
 
