@@ -8,6 +8,7 @@ Features
 * cqlengine: Makes Model._table_name_ case sensitive (PYTHON-855)
 * cqlengine: LIKE filter operator (PYTHON-512)
 * cqlengine: Remove default limit on QuerySets (PYTHON-517)
+* cqlengine: Remove two-phase query when deleting values (PYTHON-506)
 
 Bug Fixes
 ---------
@@ -25,6 +26,7 @@ Other
 * cqlengine: disallow Counter create, save operations (PYTHON-497)
 * cqlengine: remove the negative indices slicing support in ModelQuerySet (PYTHON-875)
 * cqlengine: Remove Model.__default_ttl__ (PYTHON-889)
+* cqlengine: Remove two-phase query when deleting values (PYTHON-506)
 
 3.21.0
 ======
