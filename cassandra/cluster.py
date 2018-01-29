@@ -1303,7 +1303,7 @@ class Cluster(object):
 
             # results will include Address instances
             results = session.execute("SELECT * FROM users")
-            row = results[0]
+            row = results.one()
             print row.id, row.location.street, row.location.zipcode
 
         """
@@ -4492,20 +4492,44 @@ class QueryExhausted(Exception):
     pass
 
 
+class ResultSetIterator(object):
+    """ResultSet iterator that handle pagination transparently"""
+
+    def __init__(self, result_set):
+        self._result_set = result_set
+
+    def __iter__(self):
+        if self._result_set._page_iter is None:
+            self._result_set._page_iter = iter(self._result_set.current_rows)
+        return self
+
+    def next(self):
+        try:
+            return next(self._result_set._page_iter)
+        except StopIteration:
+            if not self._result_set.has_more_pages:
+                self._result_set._current_rows = []
+                raise
+
+        self._result_set.fetch_next_page()
+        self._result_set._page_iter = iter(self._result_set._current_rows)
+
+        return next(self._result_set._page_iter)
+
+    __next__ = next
+
+
 class ResultSet(object):
     """
-    An iterator over the rows from a query result. Also supplies basic equality
-    and indexing methods for backward-compatability. These methods materialize
-    the entire result set (loading all pages), and should only be used if the
-    total result size is understood. Warnings are emitted when paged results
-    are materialized in this fashion.
-
-    You can treat this as a normal iterator over rows::
+    The result of a query. You can access rows using an iterator::
 
         >>> from cassandra.query import SimpleStatement
         >>> statement = SimpleStatement("SELECT * FROM users", fetch_size=10)
         >>> for user_row in session.execute(statement):
         ...     process_user(user_row)
+
+        # or for a single row with
+        >>> row = session.execute(statement).one()
 
     Whenever there are no more rows in the current page, the next page will
     be fetched transparently.  However, note that it *is* possible for
@@ -4519,7 +4543,6 @@ class ResultSet(object):
         self.column_types = response_future._col_types
         self._set_current_rows(initial_response)
         self._page_iter = None
-        self._list_mode = False
 
     @property
     def has_more_pages(self):
@@ -4543,37 +4566,10 @@ class ResultSet(object):
         you know a query returns a single row. Consider using an iterator if the
         ResultSet contains more than one row.
         """
-        row = None
-        if self._current_rows:
-            try:
-                row = self._current_rows[0]
-            except TypeError:  # generator object is not subscriptable, PYTHON-1026
-                row = next(iter(self._current_rows))
-
-        return row
+        return self._current_rows[0] if self._current_rows else None
 
     def __iter__(self):
-        if self._list_mode:
-            return iter(self._current_rows)
-        self._page_iter = iter(self._current_rows)
-        return self
-
-    def next(self):
-        try:
-            return next(self._page_iter)
-        except StopIteration:
-            if not self.response_future.has_more_pages:
-                if not self._list_mode:
-                    self._current_rows = []
-                raise
-
-        if not self.response_future._continuous_paging_session:
-            self.fetch_next_page()
-            self._page_iter = iter(self._current_rows)
-
-        return next(self._page_iter)
-
-    __next__ = next
+        return iter(ResultSetIterator(self))
 
     def fetch_next_page(self):
         """
@@ -4597,31 +4593,6 @@ class ResultSet(object):
             self._current_rows = result
         except TypeError:
             self._current_rows = [result] if result else []
-
-    def _fetch_all(self):
-        self._current_rows = list(self)
-        self._page_iter = None
-
-    def _enter_list_mode(self, operator):
-        if self._list_mode:
-            return
-        if self._page_iter:
-            raise RuntimeError("Cannot use %s when results have been iterated." % operator)
-        if self.response_future.has_more_pages:
-            log.warning("Using %s on paged results causes entire result set to be materialized.", operator)
-        self._fetch_all()  # done regardless of paging status in case the row factory produces a generator
-        self._list_mode = True
-
-    def __eq__(self, other):
-        self._enter_list_mode("equality operator")
-        return self._current_rows == other
-
-    def __getitem__(self, i):
-        if i == 0:
-            warn("ResultSet indexing support will be removed in 4.0. Consider using "
-                 "ResultSet.one() to get a single row.", DeprecationWarning)
-        self._enter_list_mode("index operator")
-        return self._current_rows[i]
 
     def __nonzero__(self):
         return bool(self._current_rows)
