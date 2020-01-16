@@ -1536,7 +1536,7 @@ class BetaProtocolTest(unittest.TestCase):
             with self.assertRaises(NoHostAvailable):
                 cluster.connect()
         except Exception as e:
-            self.fail("Unexpected error encountered {0}".format(e.message))
+            self.fail("Unexpected error encountered {0}".format(e))
 
     @protocolv5
     def test_valid_protocol_version_beta_options_connect(self):
@@ -1552,61 +1552,5 @@ class BetaProtocolTest(unittest.TestCase):
         cluster = Cluster(protocol_version=cassandra.ProtocolVersion.MAX_SUPPORTED, allow_beta_protocol_version=True)
         session = cluster.connect()
         self.assertEqual(cluster.protocol_version, cassandra.ProtocolVersion.MAX_SUPPORTED)
-        self.assertTrue(session.execute("select release_version from system.local")[0])
+        self.assertTrue(session.execute("select release_version from system.local").one())
         cluster.shutdown()
-
-
-class DeprecationWarningTest(unittest.TestCase):
-    def test_deprecation_warnings_legacy_parameters(self):
-        """
-        Tests the deprecation warning has been added when using
-        legacy parameters
-
-        @since 3.13
-        @jira_ticket PYTHON-877
-        @expected_result the deprecation warning is emitted
-
-        @test_category logs
-        """
-        with warnings.catch_warnings(record=True) as w:
-            Cluster(load_balancing_policy=RoundRobinPolicy())
-            self.assertEqual(len(w), 1)
-            self.assertIn("Legacy execution parameters will be removed in 4.0. Consider using execution profiles.",
-                          str(w[0].message))
-
-    def test_deprecation_warnings_meta_refreshed(self):
-        """
-        Tests the deprecation warning has been added when enabling
-        metadata refreshment
-
-        @since 3.13
-        @jira_ticket PYTHON-890
-        @expected_result the deprecation warning is emitted
-
-        @test_category logs
-        """
-        with warnings.catch_warnings(record=True) as w:
-            cluster = Cluster()
-            cluster.set_meta_refresh_enabled(True)
-            self.assertEqual(len(w), 1)
-            self.assertIn("Cluster.set_meta_refresh_enabled is deprecated and will be removed in 4.0.",
-                          str(w[0].message))
-
-    def test_deprecation_warning_default_consistency_level(self):
-        """
-        Tests the deprecation warning has been added when enabling
-        session the default consistency level to session
-
-        @since 3.14
-        @jira_ticket PYTHON-935
-        @expected_result the deprecation warning is emitted
-
-        @test_category logs
-        """
-        with warnings.catch_warnings(record=True) as w:
-            cluster = Cluster()
-            session = cluster.connect()
-            session.default_consistency_level = ConsistencyLevel.ONE
-            self.assertEqual(len(w), 1)
-            self.assertIn("Setting the consistency level at the session level will be removed in 4.0",
-                          str(w[0].message))

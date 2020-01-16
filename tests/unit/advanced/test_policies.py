@@ -18,7 +18,7 @@ except ImportError:
 
 from mock import Mock
 
-from cassandra.pool import Host
+from cassandra.hosts import Host
 from cassandra.policies import RoundRobinPolicy
 
 from cassandra.policies import DSELoadBalancingPolicy

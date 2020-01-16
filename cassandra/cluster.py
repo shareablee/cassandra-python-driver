@@ -1152,7 +1152,7 @@ class Cluster(object):
         if self._contact_points_explicit and not self.cloud:  # avoid this warning for cloud users.
             default_lbp_profiles = self.profile_manager._profiles_without_explicit_lbps()
             if default_lbp_profiles:
-                log.warn(
+                log.warning(
                     'Cluster.__init__ called with contact_points '
                     'specified, but load-balancing policies are not '
                     'specified in some ExecutionProfiles. In the next '
@@ -2237,7 +2237,7 @@ class Session(object):
 
         `paging_state` is an optional paging state, reused from a previous :class:`ResultSet`.
 
-        `host` is the :class:`cassandra.pool.Host` that should handle the query. If the host specified is down or
+        `host` is the :class:`cassandra.hosts.Host` that should handle the query. If the host specified is down or
         not yet connected, the query will fail with :class:`NoHostAvailable`. Using this is
         discouraged except in a few cases, e.g., querying node-local tables and applying schema changes.
 

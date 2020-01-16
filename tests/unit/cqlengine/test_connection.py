@@ -17,7 +17,6 @@ try:
 except ImportError:
     import unittest  # noqa
 
-from cassandra.cluster import _ConfigMode
 from cassandra.cqlengine import connection
 from cassandra.query import dict_factory
 
@@ -39,13 +38,10 @@ class ConnectionTest(unittest.TestCase):
         """
         Users can set the default session without having a default connection set.
         """
-        mock_cluster = Mock(
-            _config_mode=_ConfigMode.LEGACY,
-        )
         mock_session = Mock(
             row_factory=dict_factory,
             encoder=Mock(mapping={}),
-            cluster=mock_cluster,
+            cluster=Mock(),
         )
         connection.set_session(mock_session)
 

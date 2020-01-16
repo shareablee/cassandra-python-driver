@@ -15,7 +15,7 @@
 from cassandra.connection import (
     ConnectionException, ProtocolError, HEADER_DIRECTION_TO_CLIENT
 )
-from cassandra.marshal import uint8_pack, uint32_pack
+from cassandra.marshal import uint8_pack, uint32_pack, uint16_pack
 from cassandra.protocol import (
     write_stringmultimap, write_int, write_string, SupportedMessage, ReadyMessage, ServerError
 )
@@ -204,13 +204,14 @@ class ReactorTestMixin(object):
     def set_socket(self, connection, obj):
         return setattr(connection, self.socket_attr_name, obj)
 
-    def make_header_prefix(self, message_class, version=2, stream_id=0):
-        return binary_type().join(map(uint8_pack, [
+    def make_header_prefix(self, message_class, version=3, stream_id=0):
+        header = list(map(uint8_pack, [
             0xff & (HEADER_DIRECTION_TO_CLIENT | version),
-            0,  # flags (compression)
             stream_id,
             message_class.opcode  # opcode
         ]))
+        header.insert(1, uint16_pack(0))  # flags (compression)
+        return binary_type().join(header)
 
     def make_connection(self):
         c = self.connection_class(DefaultEndPoint('1.2.3.4'), cql_version='3.0.1', connect_timeout=5)
