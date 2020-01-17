@@ -1,3 +1,14 @@
+!!! THIS REPOSITORY IS SHAREABLEE FORK OF ORIGINAL PYTHON CASSANDRA DRIVER !!!
+
+We did this fork because we have to support cassandra 1.x (this is last version
+of python driver that supports cassandra 1 and 3 at the same time) and also we
+need to support python3.8 at the same time (and this library in that specific
+version doesn't have that feature).
+
+Our fork is python3 adjustment to last version of driver that supports
+cassandra1.
+
+
 DataStax Python Driver for Apache Cassandra
 ===========================================
 
