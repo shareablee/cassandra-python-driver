@@ -388,7 +388,7 @@ def run_setup(extensions):
         # 1.) build_ext eats errors at compile time, letting the install complete while producing useful feedback
         # 2.) there could be a case where the python environment has cython installed but the system doesn't have build tools
         if pre_build_check():
-            cython_dep = 'Cython>=0.20,!=0.25,<0.28'
+            cython_dep = 'Cython>=0.20,!=0.25,<0.30'
             kw['setup_requires'] = [cython_dep]
         else:
             sys.stderr.write("Bypassing Cython setup requirement\n")
